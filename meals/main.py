@@ -35,7 +35,7 @@ class MainPage(QWidget):
         self.BMI_Checker.setLayout(self.BC_layout)
         # BMI_Show Group
         self.BMI_Label1 = QLabel('당신의 BMI는')
-        self.BMI_Figure = QLabel()
+        self.BMI_Figure = QLabel('0')
         self.BMI_Label2 = QLabel('입니다.')
         # Set BMI_Show layout
         self.BS_layout = QGridLayout()
@@ -98,9 +98,9 @@ class MainPage(QWidget):
         self.setWindowTitle('오늘의 식단')
 
         # Signals
-        self.BMI_Confirm.clicked.connect(self.BMI_Calculating)
+        self.BMI_Confirm.clicked.connect(self.BMICalculatingFunction)
 
-    def BMI_Calculating(self):#if 조건으로 아무것도 안쳐질때 오류메시지 출력하
+    def BMICalculatingFunction(self):#if 조건으로 아무것도 안쳐질때 오류메시지 출력하
         height = self.BMI_Height.text()
         weight = self.BMI_Weight.text()
         heights = int(height)
@@ -108,7 +108,10 @@ class MainPage(QWidget):
         BMI = weights/((heights/100)*(heights/100))
 
         # debug calculating BMI
-        print(BMI)
+        print(round(BMI, 2))
+    def ShowBMIFunction(self):
+        BMI = self.BMICalculatingFunction()
+        self.BMI_Figure.setText(round(BMI, 2))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
