@@ -3,6 +3,40 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
+class AddPage(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.AddUI()
+
+    def AddUI(self):
+        self.setWindowTitle('음식 추가')
+        self.FA_Group = QGroupBox()
+        self.Food_name = QLineEdit()
+        self.Food_name.setPlaceholderText('음식 이름')
+        self.Food_Kcal = QLineEdit()
+        self.Food_Kcal.setPlaceholderText('칼로라(kcal)')
+        self.Food_ingredient = QComboBox()
+        self.Food_ingredient.addItem('1')
+        self.Food_Submit = QPushButton('추가')
+
+        FA_layout = QGridLayout()
+        FA_layout.addWidget(self.Food_name, 0, 0)
+        FA_layout.addWidget(self.Food_Kcal, 0, 1)
+        FA_layout.addWidget(self.Food_ingredient, 0, 2)
+        FA_layout.addWidget(self.Food_Submit, 0, 3)
+
+        self.setLayout(FA_layout)
+
+    def saveFoodFunction(self):
+        F_name = self.Food_name.text()
+        F_kcal = self.Food_Kcal.text()
+        F_ingredient = self.Food_ingredient.event()
+        return F_name, F_kcal, F_ingredient
+    def sendFoodFunction(self):
+        F_name = self.saveFoodFunction()
+        F_kcal = self.saveFoodFunction()
+        F_ingredient = self.saveFoodFunction()
+
 
 class MainPage(QWidget):
 
@@ -108,6 +142,10 @@ class MainPage(QWidget):
         self.BMI_Confirm.clicked.connect(self.ShowLeftsideFunction)
         self.BMI_Gender_Male.stateChanged.connect(self.gendercheckBoxState)
         self.BMI_Gender_Female.stateChanged.connect(self.gendercheckBoxState)
+        self.Food_Adding.clicked.connect(self.AddUIOpenFunction)
+
+
+    # Left side Functions
     def gendercheckBoxState(self):
         gendercounter = 0
         if self.BMI_Gender_Male.isChecked() == True:
@@ -147,6 +185,12 @@ class MainPage(QWidget):
     def ShowLeftsideFunction(self):
         self.ShowBMIFunction()
         self.ShowKcalFunction()
+    # Right side function
+    def AddUIOpenFunction(self):
+        dlg = AddPage()
+        dlg.exec_()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     Main = MainPage()
