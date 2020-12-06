@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 import sys
+import os
+import sqlite3 as sq
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -27,15 +30,82 @@ class AddPage(QDialog):
 
         self.setLayout(FA_layout)
 
-    def saveFoodFunction(self):
-        F_name = self.Food_name.text()
-        F_kcal = self.Food_Kcal.text()
-        F_ingredient = self.Food_ingredient.event()
-        return F_name, F_kcal, F_ingredient
-    def sendFoodFunction(self):
-        F_name = self.saveFoodFunction()
-        F_kcal = self.saveFoodFunction()
-        F_ingredient = self.saveFoodFunction()
+        self.Food_Kcal.setValidator(QIntValidator(0, 10000))
+        self.Food_Submit.clicked.connect(self.InsertData)
+        self.setTable()
+
+    def setTable(self):
+        # Table 가로(column) 갯수
+        MainPage.food_List.setColumnCount(4)
+
+        # Table 칼럼 헤더 라벨
+        MainPage.food_List.setHorizontalHeaderLabels(['번호', '이름', '나이', '삭제'])
+
+    def CreateTable(self):
+        # sqlite3 db 파일 접속, 없으면 생성
+        conn = sq.connect("foodlist.db")
+        cur = conn.cursor()
+
+        # db에 table라는 테이블이 있는지 sqlite3의 마스터 테이블에서 정보를 받아온다.
+        sql = "SELECT name FROM sqlite_master WHERE type='table' AND name ='food'"
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+        # table 테이블이 없으면 새로 생성하고,  있으면 통과
+        if not rows:
+            sql = "CREATE TABLE food (idx INTEGER PRIMARY KEY, fname TEXT, fkcal INTEGER)"
+            cur.execute(sql)
+            conn.commit()
+
+        conn.close()
+
+    def InsertData(self):
+        # 두개의 lineEdit에서 각각 이름과 나이를 받아온다.
+        fname = self.Food_name.text()
+        fkcal = self.Food_Kcal.text()
+
+        conn = sq.connect("foodlist.db")
+        cur = conn.cursor()
+
+        sql = "INSERT INTO food (fname, fkcal) VALUES (?,?)"
+        cur.execute(sql, (fname, fkcal))
+        conn.commit()
+        conn.close()
+
+        # 데이터 입력 후 DB의 내용 불러와서 TableWidget에 넣기 위한 함수 호출
+        self.SelectData()
+
+    def SelectData(self):
+        # 데이터베이스 내부 테이블의 내용을 모두 추출
+        conn = sq.connect("foodlist.db")
+        cur = conn.cursor()
+
+        sql = "SELECT * FROM food"
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+        conn.close()
+
+        # DB의 내용을 불러와서 TableWidget에 넣기 위한 함수 호출
+        self.setTables(rows)
+
+    def setTables(row):
+        # DB내부에 저장된 결과물의 갯수를 저장한다.
+        count = len(row)
+
+        # 갯수만큼 테이블의 Row를 생성한다.
+        MainPage.Food_List.setRowCount(count)
+
+        # row 리스트만큼 반복하며 Table에 DB 값을 넣는다.
+        for x in range(count):
+            # 리스트 내부의 column쌍은 튜플로 반환하므로 튜플의 각 값을 변수에 저장
+            idx, name, kcal = row[x]
+
+            # 테이블의 각 셀에 값 입력
+            MainPage.Food_List.setItem(x, 0, QTableWidgetItem(str(idx)))
+            MainPage.Food_List.setItem(x, 1, QTableWidgetItem(name))
+            MainPage.Food_List.setItem(x, 2, QTableWidgetItem(str(kcal)))
+
 
 
 class MainPage(QWidget):
@@ -194,5 +264,6 @@ class MainPage(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     Main = MainPage()
+    Add = AddPage()
     Main.show()
     sys.exit(app.exec_())
