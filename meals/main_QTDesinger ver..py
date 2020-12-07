@@ -1,111 +1,8 @@
-# -*- coding: utf-8 -*-
 import sys
-import os
-import sqlite3 as sq
+import random
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-
-class AddPage(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.AddUI()
-
-    def AddUI(self):
-        self.setWindowTitle('음식 추가')
-        self.FA_Group = QGroupBox()
-        self.Food_name = QLineEdit()
-        self.Food_name.setPlaceholderText('음식 이름')
-        self.Food_Kcal = QLineEdit()
-        self.Food_Kcal.setPlaceholderText('칼로라(kcal)')
-        self.Food_ingredient = QComboBox()
-        self.Food_ingredient.addItem('1')
-        self.Food_Submit = QPushButton('추가')
-
-        FA_layout = QGridLayout()
-        FA_layout.addWidget(self.Food_name, 0, 0)
-        FA_layout.addWidget(self.Food_Kcal, 0, 1)
-        FA_layout.addWidget(self.Food_ingredient, 0, 2)
-        FA_layout.addWidget(self.Food_Submit, 0, 3)
-
-        self.setLayout(FA_layout)
-
-        self.Food_Kcal.setValidator(QIntValidator(0, 10000))
-        self.Food_Submit.clicked.connect(self.InsertData)
-        self.setTable()
-
-    def setTable(self):
-        # Table 가로(column) 갯수
-        MainPage.food_List.setColumnCount(4)
-
-        # Table 칼럼 헤더 라벨
-        MainPage.food_List.setHorizontalHeaderLabels(['번호', '이름', '나이', '삭제'])
-
-    def CreateTable(self):
-        # sqlite3 db 파일 접속, 없으면 생성
-        conn = sq.connect("foodlist.db")
-        cur = conn.cursor()
-
-        # db에 table라는 테이블이 있는지 sqlite3의 마스터 테이블에서 정보를 받아온다.
-        sql = "SELECT name FROM sqlite_master WHERE type='table' AND name ='food'"
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-        # table 테이블이 없으면 새로 생성하고,  있으면 통과
-        if not rows:
-            sql = "CREATE TABLE food (idx INTEGER PRIMARY KEY, fname TEXT, fkcal INTEGER)"
-            cur.execute(sql)
-            conn.commit()
-
-        conn.close()
-
-    def InsertData(self):
-        # 두개의 lineEdit에서 각각 이름과 나이를 받아온다.
-        fname = self.Food_name.text()
-        fkcal = self.Food_Kcal.text()
-
-        conn = sq.connect("foodlist.db")
-        cur = conn.cursor()
-
-        sql = "INSERT INTO food (fname, fkcal) VALUES (?,?)"
-        cur.execute(sql, (fname, fkcal))
-        conn.commit()
-        conn.close()
-
-        # 데이터 입력 후 DB의 내용 불러와서 TableWidget에 넣기 위한 함수 호출
-        self.SelectData()
-
-    def SelectData(self):
-        # 데이터베이스 내부 테이블의 내용을 모두 추출
-        conn = sq.connect("foodlist.db")
-        cur = conn.cursor()
-
-        sql = "SELECT * FROM food"
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-        conn.close()
-
-        # DB의 내용을 불러와서 TableWidget에 넣기 위한 함수 호출
-        self.setTables(rows)
-
-    def setTables(row):
-        # DB내부에 저장된 결과물의 갯수를 저장한다.
-        count = len(row)
-
-        # 갯수만큼 테이블의 Row를 생성한다.
-        MainPage.Food_List.setRowCount(count)
-
-        # row 리스트만큼 반복하며 Table에 DB 값을 넣는다.
-        for x in range(count):
-            # 리스트 내부의 column쌍은 튜플로 반환하므로 튜플의 각 값을 변수에 저장
-            idx, name, kcal = row[x]
-
-            # 테이블의 각 셀에 값 입력
-            MainPage.Food_List.setItem(x, 0, QTableWidgetItem(str(idx)))
-            MainPage.Food_List.setItem(x, 1, QTableWidgetItem(name))
-            MainPage.Food_List.setItem(x, 2, QTableWidgetItem(str(kcal)))
-
 
 
 class MainPage(QWidget):
@@ -116,6 +13,7 @@ class MainPage(QWidget):
 
     def MainUI(self):
         # Top side
+        self.Title = QLabel('오늘의 식단')
         self.Weaklymeal_Generator = QPushButton('식단표 생성')
 
         # Left side
@@ -167,17 +65,26 @@ class MainPage(QWidget):
 
         # Right side
         # Group
-        self.Food_Group = QGroupBox('음식') # Group for Food_List, Food_Adding
+        self.Food_Group = QGroupBox('음식리스트') # Group for Food_List, Food_Adding
         # Food_Group
-        self.FG_Label = QLabel('음식 리스트')
-        self.Food_Adding = QPushButton('음식 추가')
-        self.Food_List = QTableWidget()
+        self.Food_List = QListWidget()
         # Set Food_Group layout
         self.FG_layout = QGridLayout()
-        self.FG_layout.addWidget(self.FG_Label, 1, 0, 1, 3)
-        self.FG_layout.addWidget(self.Food_Adding, 1, 4)
         self.FG_layout.addWidget(self.Food_List, 3, 0, 8, 5)
         self.Food_Group.setLayout(self.FG_layout)
+        #FA
+        self.FA_Group = QGroupBox('음식추가')
+        self.Food_name = QLineEdit()
+        self.Food_name.setPlaceholderText('음식 이름')
+        self.Food_Submit = QPushButton('추가')
+        self.Food_Delete = QPushButton('삭제')
+        #
+        FA_layout = QGridLayout()
+        FA_layout.addWidget(self.Food_name, 0, 0)
+        FA_layout.addWidget(self.Food_Submit, 0, 1)
+        FA_layout.addWidget(self.Food_Delete, 0, 2)
+
+        self.FA_Group.setLayout(FA_layout)
 
         # Down side
         # Group
@@ -185,6 +92,9 @@ class MainPage(QWidget):
         # Weaklymeal_Group
         self.Weaklymeal_label = QLabel("금주의 식단")
         self.Weaklymeal_Sheet = QTableWidget()
+        # sheet setting
+        self.Weaklymeal_Sheet.setRowCount(3)
+        self.Weaklymeal_Sheet.setColumnCount(7)
         # Set Weaklymeal_Group layout
         self.WG_layout = QGridLayout()
         self.WG_layout.addWidget(self.Weaklymeal_label, 0, 0)
@@ -197,11 +107,13 @@ class MainPage(QWidget):
 
         # Layout
         self.layout = QGridLayout()
+        self.layout.addWidget(self.Title, 0, 0, 1, 0)
         self.layout.addWidget(self.Weaklymeal_Generator, 4, 0, 1, 0)
         self.layout.addWidget(self.BMI_Checker, 1, 0)
         self.layout.addWidget(self.BMI_Show, 2, 0)
         self.layout.addWidget(self.Kcal_Show, 3, 0)
         self.layout.addWidget(self.Food_Group, 1, 1, 3, 1)
+        self.layout.addWidget(self.FA_Group, 0, 1)
         self.layout.addWidget(self.Weaklymeal_Group, 5, 0, 1, 2)
 
         self.setLayout(self.layout)
@@ -212,10 +124,10 @@ class MainPage(QWidget):
         self.BMI_Confirm.clicked.connect(self.ShowLeftsideFunction)
         self.BMI_Gender_Male.stateChanged.connect(self.gendercheckBoxState)
         self.BMI_Gender_Female.stateChanged.connect(self.gendercheckBoxState)
-        self.Food_Adding.clicked.connect(self.AddUIOpenFunction)
+        self.Food_Submit.clicked.connect(self.AddListFunction)
+        self.Food_Delete.clicked.connect(self.DeleteListFunction)
+        self.Weaklymeal_Generator.clicked.connect(self.generateFunction)
 
-
-    # Left side Functions
     def gendercheckBoxState(self):
         gendercounter = 0
         if self.BMI_Gender_Male.isChecked() == True:
@@ -255,15 +167,30 @@ class MainPage(QWidget):
     def ShowLeftsideFunction(self):
         self.ShowBMIFunction()
         self.ShowKcalFunction()
-    # Right side function
-    def AddUIOpenFunction(self):
-        dlg = AddPage()
-        dlg.exec_()
+    def AddListFunction(self):
+        self.foodText = self.Food_name.text()
+        self.Food_List.addItem(self.foodText)
+        self.Food_name.setText("")
+    def DeleteListFunction(self):
+        self.removeItemRow = self.Food_List.currentRow()
+        self.Food_List.takeItem(self.removeItemRow)
+    def generateFunction(self):
+        selectedList = self.Food_List
+        items = []
+        for i in range(selectedList.count()):
+            items.append(selectedList.item(i).text())
+
+
+        for x in range(3):
+            for y in range(7):
+                Rmeal = random.choice(items)
+                self.Weaklymeal_Sheet.setItem(x, y, QTableWidgetItem(Rmeal))
+
+
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     Main = MainPage()
-    Add = AddPage()
     Main.show()
     sys.exit(app.exec_())
